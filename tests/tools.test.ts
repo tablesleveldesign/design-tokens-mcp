@@ -130,3 +130,31 @@ describe('list_tokens', () => {
     expect(errorText(result)).toMatch(/invalid\.json" is invalid: Missing section "primitive"/);
   });
 });
+
+describe('resolve_token', () => {
+  it('returns every theme with the value, chain and CSS variable', async () => {
+    const { structuredContent, content } = await call(await connect(), 'resolve_token', { name: 'accent-default' });
+    expect(structuredContent).toEqual({
+      name: 'accent-default',
+      kind: 'semantic',
+      cssVar: '--accent-default',
+      values: [
+        { theme: 'light', value: '#195e51', chain: ['accent-default', 'color.teal.700', '#195e51'] },
+        { theme: 'dark', value: '#4fb39d', chain: ['accent-default', 'color.teal.400', '#4fb39d'] },
+      ],
+    });
+    expect(content[0]?.text).toContain('light: accent-default -> color.teal.700 -> #195e51');
+  });
+
+  it('returns null cssVar and usedBy for a primitive color', async () => {
+    const { structuredContent, content } = await call(await connect(), 'resolve_token', { name: 'color.teal.700' });
+    expect(structuredContent.cssVar).toBeNull();
+    expect(structuredContent.usedBy.light).toEqual(['accent-default', 'accent-text']);
+    expect(content[0]?.text).toContain('none, use a semantic token');
+  });
+
+  it('returns the closest names for an unknown token', async () => {
+    const result = await call(await connect(), 'resolve_token', { name: 'accent-defalt' });
+    expect(errorText(result)).toMatch(/^Unknown token "accent-defalt"\. Closest names: accent-default/);
+  });
+});
