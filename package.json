@@ -1,0 +1,29 @@
+{
+  "name": "design-tokens-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that lets coding agents query a design token file and check contrast",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=22.23"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.0.5"
+  }
+}
