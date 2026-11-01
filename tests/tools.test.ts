@@ -158,3 +158,79 @@ describe('resolve_token', () => {
     expect(errorText(result)).toMatch(/^Unknown token "accent-defalt"\. Closest names: accent-default/);
   });
 });
+
+describe('check_contrast', () => {
+  it('checks a declared pair in every theme', async () => {
+    const { structuredContent, content } = await call(await connect(), 'check_contrast', {
+      fg: 'text-muted',
+      bg: 'surface-raised',
+    });
+    expect(structuredContent).toEqual({
+      fg: 'text-muted',
+      bg: 'surface-raised',
+      results: [
+        { theme: 'light', fgValue: '#5e594d', bgValue: '#ffffff', ratio: 6.97, grade: 'AA', min: 4.5, pass: true },
+        { theme: 'dark', fgValue: '#9f998b', bgValue: '#1e1c18', ratio: 6, grade: 'AA', min: 4.5, pass: true },
+      ],
+    });
+    expect(content[0]?.text).toContain('dark: text-muted on surface-raised: 6.00 (AA), declared min 4.5: pass');
+  });
+
+  it('limits the check to the requested theme', async () => {
+    const { structuredContent } = await call(await connect(), 'check_contrast', {
+      fg: 'text-muted',
+      bg: 'surface-raised',
+      theme: 'light',
+    });
+    expect(structuredContent.results).toHaveLength(1);
+  });
+
+  it('leaves out min and pass for an undeclared pair', async () => {
+    const { structuredContent } = await call(await connect(), 'check_contrast', {
+      fg: 'surface-raised',
+      bg: 'text-muted',
+      theme: 'light',
+    });
+    expect(structuredContent.results[0]).not.toHaveProperty('min');
+    expect(structuredContent.results[0]).not.toHaveProperty('pass');
+  });
+
+  it('returns one result with no theme when both colors are hex', async () => {
+    const { structuredContent } = await call(await connect(), 'check_contrast', { fg: '#777777', bg: '#FFFFFF' });
+    expect(structuredContent.results).toEqual([
+      { fgValue: '#777777', bgValue: '#ffffff', ratio: 4.48, grade: 'AA large' },
+    ]);
+  });
+
+  it('mixes a hex color with a semantic token per theme', async () => {
+    const { structuredContent } = await call(await connect(), 'check_contrast', {
+      fg: '#000000',
+      bg: 'surface-base',
+    });
+    expect(structuredContent.results.map((result: { theme: string }) => result.theme)).toEqual(['light', 'dark']);
+  });
+
+  it('returns the closest names for an unknown token', async () => {
+    const result = await call(await connect(), 'check_contrast', { fg: 'text-mutd', bg: 'surface-raised' });
+    expect(errorText(result)).toMatch(/^Unknown token "text-mutd"\. Closest names: text-muted/);
+  });
+
+  it('explains a short hex color', async () => {
+    const result = await call(await connect(), 'check_contrast', { fg: '#fff', bg: '#000000' });
+    expect(errorText(result)).toContain('"#fff" is not a #rrggbb color');
+  });
+
+  it('explains a token that is not a color', async () => {
+    const path = join(dir, 'not-a-color.json');
+    await writeFile(
+      path,
+      JSON.stringify({
+        primitive: { space: { 4: '1rem' } },
+        semantic: { light: { gap: '{space.4}' } },
+        contrastPairs: [],
+      }),
+    );
+    const result = await call(await connect(path), 'check_contrast', { fg: 'gap', bg: '#ffffff' });
+    expect(errorText(result)).toContain('"gap" is "1rem" in theme "light", which is not a #rrggbb color.');
+  });
+});
