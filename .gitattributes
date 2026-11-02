@@ -1,0 +1,2 @@
+# Keep LF everywhere so Prettier passes on Windows checkouts with core.autocrlf on.
+* text=auto eol=lf
